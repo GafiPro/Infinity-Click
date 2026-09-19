@@ -63,7 +63,7 @@ public class InfinityClickClient implements ClientModInitializer {
                 && client.currentScreen == null
                 && client.player != null
                 && client.world != null
-                && client.getWindow().isFocused();
+                && client.isWindowFocused();
 
         if (!active) {
             wasHeld = false;
@@ -74,8 +74,7 @@ public class InfinityClickClient implements ClientModInitializer {
 
         // Prevent Minecraft's normal held-use state from duplicating the
         // generated clicks. We read the physical GLFW state above instead.
-        KeyBinding useKey = client.options.useKey();
-        useKey.setPressed(false);
+        client.options.useKey.setPressed(false);
 
         long clickIntervalNanos = 1_000_000_000L / clicksPerSecond;
 
