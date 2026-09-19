@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "infinityclick",
+  "version": "${version}",
+  "name": "Infinity Click",
+  "description": "Hold right click to repeatedly trigger the Minecraft item-use action.",
+  "authors": ["GafiPro"],
+  "contact": {
+    "sources": "https://github.com/GafiPro/Infinity-Click"
+  },
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.gafipro.infinityclick.InfinityClickClient"
+    ]
+  },
+  "mixins": [
+    "infinityclick.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.1",
+    "minecraft": "1.21.11",
+    "java": ">=21",
+    "fabric-api": ">=0.141.3"
+  }
+}
