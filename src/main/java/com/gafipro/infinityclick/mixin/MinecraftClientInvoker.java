@@ -1,11 +1,11 @@
 package com.gafipro.infinityclick.mixin;
 
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(MinecraftClient.class)
 public interface MinecraftClientInvoker {
-    @Invoker("startUseItem")
-    void infinityClick$startUseItem();
+    @Invoker("doItemUse")
+    void infinityClick$doItemUse();
 }
