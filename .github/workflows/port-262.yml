@@ -56,8 +56,8 @@ jobs:
         with:
           gradle-version: "9.5.1"
       - name: Migrate Yarn source to Mojang mappings
-        run: gradle migrateMappings --mappings "net.minecraft:mappings:1.21.11" --no-daemon
-      - name: Restore 26.2 build files and migrated source
+        run: gradle migrateMappings --input "src/main/java" --output "src/main/java" --mappings "net.minecraft:mappings:1.21.11" --overrideInputsIHaveABackup --no-daemon
+      - name: Restore 26.2 build files
         shell: bash
         run: |
           cp /tmp/target/gradle.properties gradle.properties
