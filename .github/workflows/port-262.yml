@@ -12,72 +12,73 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
-      - name: Save target build files
+      - name: Save target build
+        shell: bash
         run: |
           mkdir -p /tmp/target
           cp gradle.properties /tmp/target/gradle.properties
           cp build.gradle /tmp/target/build.gradle
           cp settings.gradle /tmp/target/settings.gradle
-          find src -name fabric.mod.json -print0 | while IFS= read -r -d '' f; do mkdir -p "/tmp/target/$(dirname "$f")"; cp "$f" "/tmp/target/$f"; done
-      - name: Prepare temporary 1.21.11 Yarn build
+          cp -R src /tmp/target/src
+      - name: Prepare 1.21.11 Yarn environment
         shell: python
         run: |
           from pathlib import Path
           import re
-          p = Path('gradle.properties')
+
+          p = Path("gradle.properties")
           s = p.read_text()
-          s = re.sub(r'^minecraft_version=.*$', 'minecraft_version=1.21.11', s, flags=re.M)
-          s = re.sub(r'^loader_version=.*$', 'loader_version=0.19.3', s, flags=re.M)
-          s = re.sub(r'^loom_version=.*$', 'loom_version=1.17.13', s, flags=re.M)
-          s = re.sub(r'^(fabric_api_version|fabric_version)=.*$', lambda m: m.group(1) + '=0.141.6+1.21.11', s, flags=re.M)
-          if 'yarn_mappings=' not in s:
-              s += '\nyarn_mappings=1.21.11+build.4\n'
-          elif re.search(r'^yarn_mappings=.*$', s, flags=re.M):
-              s = re.sub(r'^yarn_mappings=.*$', 'yarn_mappings=1.21.11+build.4', s, flags=re.M)
+          s = re.sub(r"^minecraft_version=.*$", "minecraft_version=1.21.11", s, flags=re.M)
+          s = re.sub(r"^loader_version=.*$", "loader_version=0.19.3", s, flags=re.M)
+          s = re.sub(r"^loom_version=.*$", "loom_version=1.17.13", s, flags=re.M)
+          s = re.sub(r"^fabric_api_version=.*$", "fabric_api_version=0.141.6+1.21.11", s, flags=re.M)
+          if "yarn_mappings=" not in s:
+              s += "\nyarn_mappings=1.21.11+build.4\n"
           p.write_text(s)
-          p = Path('build.gradle')
+
+          p = Path("build.gradle")
           s = p.read_text()
-          s = s.replace("net.fabricmc.fabric-loom'", "net.fabricmc.fabric-loom-remap'")
-          s = s.replace("net.fabricmc.fabric-loom\"", "net.fabricmc.fabric-loom-remap\"")
-          if 'mappings ' not in s:
-              s = s.replace('    minecraft "com.mojang:minecraft:${project.minecraft_version}"\n', '    minecraft "com.mojang:minecraft:${project.minecraft_version}"\n    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"\n')
-              s = s.replace('    minecraft "com.mojang:minecraft:${minecraft_version}"\n', '    minecraft "com.mojang:minecraft:${minecraft_version}"\n    mappings "net.fabricmc:yarn:${yarn_mappings}:v2"\n')
-          s = s.replace('implementation "net.fabricmc:fabric-loader:', 'modImplementation "net.fabricmc:fabric-loader:')
-          s = s.replace('implementation "net.fabricmc.fabric-api:fabric-api:', 'modImplementation "net.fabricmc.fabric-api:fabric-api:')
-          s = s.replace('options.release = 25', 'options.release = 21')
-          s = s.replace('JavaVersion.VERSION_25', 'JavaVersion.VERSION_21')
+          s = s.replace("net.fabricmc.fabric-loom", "net.fabricmc.fabric-loom-remap")
+          marker = '    minecraft "com.mojang:minecraft:${project.minecraft_version}"\n'
+          if "mappings " not in s:
+              s = s.replace(marker, marker + '    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"\n')
+          s = s.replace("implementation ", "modImplementation ")
+          s = s.replace("options.release = 25", "options.release = 21")
+          s = s.replace("JavaVersion.VERSION_25", "JavaVersion.VERSION_21")
           p.write_text(s)
-          p = Path('settings.gradle')
-          s = p.read_text()
-          s = s.replace('version \"1.17.21\"', 'version \"1.17.13\"')
-          p.write_text(s)
-      - uses: actions/setup-java@v4
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
-      - uses: gradle/actions/setup-gradle@v4
+          java-version: "21"
+      - name: Set up Gradle for migration
+        uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.5.1'
-      - name: Migrate Yarn to Mojang mappings
+          gradle-version: "9.5.1"
+      - name: Migrate Yarn source to Mojang mappings
         run: gradle migrateMappings --mappings "net.minecraft:mappings:1.21.11" --no-daemon
-      - name: Restore 26.2 build files
+      - name: Restore 26.2 build files and migrated source
+        shell: bash
         run: |
           cp /tmp/target/gradle.properties gradle.properties
           cp /tmp/target/build.gradle build.gradle
           cp /tmp/target/settings.gradle settings.gradle
-          find /tmp/target/src -name fabric.mod.json -print0 | while IFS= read -r -d '' f; do target="${f#/tmp/target/}"; cp "$f" "$target"; done
-      - uses: actions/setup-java@v4
+          rm -rf src
+          cp -R /tmp/target/src src
+          rm -rf src/main/java
+          cp -R remappedSrc src/main/java
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '25'
-      - uses: gradle/actions/setup-gradle@v4
+          java-version: "25"
+      - name: Set up Gradle for 26.2
+        uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.7.0'
+          gradle-version: "9.5.1"
       - name: Build 26.2
-        run: |
-          rm -rf build
-          gradle clean build --no-daemon --max-workers=1
-      - name: Commit migrated port
+        run: gradle clean build --no-daemon --max-workers=1
+      - name: Commit migrated source
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
