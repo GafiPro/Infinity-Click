@@ -3,7 +3,7 @@ package com.gafipro.infinityclick;
 import com.gafipro.infinityclick.mixin.MinecraftClientInvoker;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
@@ -23,8 +23,8 @@ public class InfinityClickClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(
-                    ClientCommandManager.literal("infinityclick")
-                            .then(ClientCommandManager.literal("toggle")
+                    ClientCommands.literal("infinityclick")
+                            .then(ClientCommands.literal("toggle")
                                     .executes(context -> {
                                         enabled = !enabled;
                                         context.getSource().sendFeedback(
@@ -32,8 +32,8 @@ public class InfinityClickClient implements ClientModInitializer {
                                         );
                                         return 1;
                                     }))
-                            .then(ClientCommandManager.literal("cps")
-                                    .then(ClientCommandManager.argument(
+                            .then(ClientCommands.literal("cps")
+                                    .then(ClientCommands.argument(
                                                     "number",
                                                     IntegerArgumentType.integer(MIN_CPS, MAX_CPS)
                                             )
@@ -59,7 +59,7 @@ public class InfinityClickClient implements ClientModInitializer {
 
         boolean active = enabled
                 && physicallyHeld
-                && client.screen == null
+                && client.gui.screen() == null
                 && client.player != null
                 && client.level != null
                 && client.isWindowActive();
