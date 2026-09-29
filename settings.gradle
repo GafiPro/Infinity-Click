@@ -6,8 +6,4 @@ pluginManagement {
     }
 }
 
-plugins {
-    id "net.fabricmc.fabric-loom-remap" version "1.17.21" apply false
-}
-
 rootProject.name = "Infinity-Click"
