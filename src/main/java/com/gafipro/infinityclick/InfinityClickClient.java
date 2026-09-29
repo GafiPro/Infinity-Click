@@ -3,12 +3,11 @@ package com.gafipro.infinityclick;
 import com.gafipro.infinityclick.mixin.MinecraftClientInvoker;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 public class InfinityClickClient implements ClientModInitializer {
@@ -24,24 +23,24 @@ public class InfinityClickClient implements ClientModInitializer {
     public void onInitializeClient() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(
-                    ClientCommandManager.literal("infinityclick")
-                            .then(ClientCommandManager.literal("toggle")
+                    ClientCommands.literal("infinityclick")
+                            .then(ClientCommands.literal("toggle")
                                     .executes(context -> {
                                         enabled = !enabled;
                                         context.getSource().sendFeedback(
-                                                Text.literal("Infinity Click: " + (enabled ? "ON" : "OFF"))
+                                                Component.literal("Infinity Click: " + (enabled ? "ON" : "OFF"))
                                         );
                                         return 1;
                                     }))
-                            .then(ClientCommandManager.literal("cps")
-                                    .then(ClientCommandManager.argument(
+                            .then(ClientCommands.literal("cps")
+                                    .then(ClientCommands.argument(
                                                     "number",
                                                     IntegerArgumentType.integer(MIN_CPS, MAX_CPS)
                                             )
                                             .executes(context -> {
                                                 clicksPerSecond = IntegerArgumentType.getInteger(context, "number");
                                                 context.getSource().sendFeedback(
-                                                        Text.literal("Infinity Click CPS set to " + clicksPerSecond)
+                                                        Component.literal("Infinity Click CPS set to " + clicksPerSecond)
                                                 );
                                                 return 1;
                                             })))
@@ -51,8 +50,8 @@ public class InfinityClickClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(this::onClientTick);
     }
 
-    private void onClientTick(MinecraftClient client) {
-        long handle = client.getWindow().getHandle();
+    private void onClientTick(Minecraft client) {
+        long handle = client.getWindow().handle();
         boolean physicallyHeld = GLFW.glfwGetMouseButton(
                 handle,
                 GLFW.GLFW_MOUSE_BUTTON_RIGHT
@@ -60,10 +59,10 @@ public class InfinityClickClient implements ClientModInitializer {
 
         boolean active = enabled
                 && physicallyHeld
-                && client.currentScreen == null
+                && client.gui.screen() == null
                 && client.player != null
-                && client.world != null
-                && client.isWindowFocused();
+                && client.level != null
+                && client.isWindowActive();
 
         if (!active) {
             wasHeld = false;
@@ -74,7 +73,7 @@ public class InfinityClickClient implements ClientModInitializer {
 
         // Prevent Minecraft's normal held-use state from duplicating the
         // generated clicks. We read the physical GLFW state above instead.
-        client.options.useKey.setPressed(false);
+        client.options.keyUse.setDown(false);
 
         long clickIntervalNanos = 1_000_000_000L / clicksPerSecond;
 

@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.gafipro.infinityclick.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "MinecraftClientInvoker"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
